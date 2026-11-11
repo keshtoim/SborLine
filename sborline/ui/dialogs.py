@@ -96,7 +96,8 @@ class NewOrderDialog(_FormDialog):
         step = services.route_step(self.ctx.conn, self.product.currentData(), self.operation.currentData())
         qty = self.qty.value()
         self.calc.setText(
-            f"Норма: <b>{num(step['norm_minutes'], 0)} мин/шт</b> · требуется <b>{step['required_grade']} разряд</b><br>"
+            f"Норма: <b>{num(step['norm_minutes'], 0)} мин/шт</b> · требуется <b>{step['required_grade']} разряд</b>"
+            f"{' и <b>допуск</b>' if step['requires_permit'] else ''}<br>"
             f"Расценка: <b>{rub(step['piece_rate'])}</b> · на весь наряд: "
             f"<b>{num(qty * step['norm_minutes'] / 60)} нормо-ч</b>, <b>{rub(qty * step['piece_rate'])}</b>")
         self.error.hide()

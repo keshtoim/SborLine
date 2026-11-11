@@ -95,7 +95,8 @@ class OrdersPage(Page):
             self.title.setText(f"{e['last_name']} {e['first_name']} {e['middle_name']}")
             stats = next(s for s in services.month_stats(self.ctx.conn, self.ctx.today.year, self.ctx.today.month)
                          if s["employee"]["id"] == emp_id)
-            self.t_earned.set(rub(stats["earned"]), "сдельно, без премии")
+            bonus = "премии нет: прогул" if stats["truancy"] else f"премия {rub(stats['bonus'])}"
+            self.t_earned.set(rub(stats["total"]), f"сдельно {rub(stats['earned'])}, {bonus}")
             self.t_pct.set(f"{num(stats['pct'])}%", f"{num(stats['norm_hours'])} нормо-ч за {num(stats['hours'], 0)} ч")
             self.t_good.set(str(stats["good"]), f"брак: {stats['defect']} ед.")
         fill_orders(self.table, services.orders(self.ctx.conn, self.statuses, emp_id), not self.worker)

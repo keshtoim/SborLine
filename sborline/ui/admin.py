@@ -1,6 +1,22 @@
 from .. import services
 from ..codes import ROLE_TITLES
-from .widgets import Context, Page, fill_table, item, make_table, page_header
+from .widgets import Context, Page, fill_table, item, label, make_table, page_header
+
+
+class AuditPage(Page):
+    def __init__(self, ctx: Context):
+        super().__init__(ctx)
+        self.root.addLayout(page_header("Администрирование", "Журнал действий")[0])
+        self.root.addWidget(label("Последние 500 событий, новые сверху.", "muted"))
+        self.table = make_table(["Время", "Пользователь", "Действие"])
+        self.root.addWidget(self.table, 1)
+
+    def refresh(self) -> None:
+        fill_table(self.table, [[
+            item(f"{a['ts'][8:10]}.{a['ts'][5:7]}.{a['ts'][:4]} {a['ts'][11:16]}"),
+            item(a["login"]),
+            item(a["details"] or f"{a['action']} {a['entity']} #{a['entity_id']}"),
+        ] for a in services.audit_entries(self.ctx.conn)], stretch_col=2)
 
 
 class UsersPage(Page):

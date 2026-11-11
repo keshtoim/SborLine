@@ -3,7 +3,7 @@ from PySide6.QtWidgets import (QButtonGroup, QFrame, QHBoxLayout, QMainWindow, Q
 
 from .. import services
 from ..codes import ROLE_TITLES
-from .admin import UsersPage
+from .admin import AuditPage, UsersPage
 from .dashboard import DashboardPage
 from .orders import OrdersPage
 from .refs import RefsPage
@@ -17,7 +17,8 @@ ROLE_PAGES = {
                ("Ведомость", ReportsPage), ("Справочники", RefsPage)],
     "worker": [("Мои наряды", lambda ctx: OrdersPage(ctx, worker=True))],
     "accountant": [("Ведомость", ReportsPage), ("Табель", TimesheetPage)],
-    "admin": [("Сводка", DashboardPage), ("Справочники", RefsPage), ("Пользователи", UsersPage)],
+    "admin": [("Сводка", DashboardPage), ("Справочники", RefsPage), ("Пользователи", UsersPage),
+              ("Журнал", AuditPage)],
 }
 
 

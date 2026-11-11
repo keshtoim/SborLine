@@ -1,10 +1,11 @@
-from PySide6.QtWidgets import QGridLayout, QHBoxLayout, QProgressBar, QWidget
+from PySide6.QtWidgets import QGridLayout, QHBoxLayout, QProgressBar, QVBoxLayout
 
 from .. import codes, services
 from .orders import fill_orders, orders_table
 from .widgets import MONTHS, Context, Page, Panel, Tile, label, num, page_header
 
 NORM_SCALE = 130  # шкала выполнения норм, %
+ALERT_COLORS = {"bad": "#b2362e", "warn": "#a8690f", "info": "#0e6a70"}
 
 
 def _clear(layout) -> None:
@@ -36,6 +37,12 @@ class DashboardPage(Page):
         for t in (self.t_active, self.t_good, self.t_defect, self.t_norm):
             tiles.addWidget(t)
         self.root.addLayout(tiles)
+
+        attention = Panel("Требуют внимания", "допуски, приёмка, дисциплина")
+        self.alert_box = QVBoxLayout()
+        self.alert_box.setSpacing(4)
+        attention.body.addLayout(self.alert_box)
+        self.root.addWidget(attention)
 
         panels = QHBoxLayout()
         norms = Panel("Выполнение норм по сотрудникам", "шкала до 130%, оранжевым — ниже 95%")
@@ -70,6 +77,14 @@ class DashboardPage(Page):
         self.t_good.set(f"{good:,}".replace(",", " "), "единиц по всем операциям")
         self.t_defect.set(f"{num(defect / (good + defect) * 100 if good + defect else 0)}%", f"{defect} ед. из {good + defect}")
         self.t_norm.set(f"{num(norm_h / hours * 100 if hours else 0)}%", f"{num(norm_h)} нормо-ч за {num(hours, 0)} ч")
+
+        _clear(self.alert_box)
+        items = services.alerts(conn, today)
+        for level, text in items:
+            lb = label(f"<span style='color:{ALERT_COLORS[level]}; font-weight:600'>●</span>  {text}", wrap=True)
+            self.alert_box.addWidget(lb)
+        if not items:
+            self.alert_box.addWidget(label("Замечаний нет.", "muted"))
 
         _clear(self.norm_grid)
         for r, s in enumerate(sorted(stats, key=lambda s: -s["pct"])):

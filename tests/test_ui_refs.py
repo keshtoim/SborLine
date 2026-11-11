@@ -40,3 +40,19 @@ def test_permit_dialog(app, conn):
     dlg.until.setDate(QDate(2027, 6, 1))
     dlg._submit()
     assert services.has_valid_permit(conn, 3, 3, TODAY)
+
+
+def test_payroll_card_and_audit(app, conn):
+    from sborline.ui.admin import AuditPage
+    from sborline.ui.reports import EmployeeCardDialog, ReportsPage
+    page = ReportsPage(_ctx(conn, "buh"))
+    page.refresh()
+    assert page.table.rowCount() == len(page.rows) + 1
+    morozov = next(r for r, s in enumerate(page.rows) if s["employee"]["id"] == 5)
+    assert page.table.item(morozov, 9).text() == "прогул"
+    card = EmployeeCardDialog(page.ctx, page.rows[0], 2026, 11)
+    assert card.findChildren(type(page.table))[0].rowCount() > 0
+
+    audit = AuditPage(_ctx(conn, "admin"))
+    audit.refresh()
+    assert audit.table.item(0, 2).text() == "Вход в систему"
