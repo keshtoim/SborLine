@@ -43,6 +43,19 @@ erDiagram
         text code UK
         text name
         int  required_grade FK
+        int  requires_permit "1 — нужен допуск"
+    }
+    employee_permits {
+        int  id PK
+        int  employee_id FK
+        int  operation_id FK
+        date valid_until "Срок действия"
+    }
+    bonus_settings {
+        int     id PK "всегда 1"
+        decimal threshold "Порог нормы, %"
+        decimal per_pct "Премия за 1% сверх порога"
+        decimal cap "Максимум, %"
     }
     product_operations {
         int     product_id PK, FK
@@ -115,6 +128,7 @@ erDiagram
         text     action
         text     entity
         int      entity_id
+        text     details
     }
 
     sections           ||--o{ employees          : "включает"
@@ -136,4 +150,6 @@ erDiagram
     roles              ||--o{ users              : "роль"
     employees          |o--o| users              : "учётка"
     users              |o--o{ audit_log          : "действия"
+    employees          ||--o{ employee_permits   : "допуски"
+    operations         ||--o{ employee_permits   : "требует допуска"
 ```

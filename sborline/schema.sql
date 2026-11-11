@@ -37,10 +37,28 @@ CREATE TABLE IF NOT EXISTS products (
 );
 
 CREATE TABLE IF NOT EXISTS operations (
-    id              INTEGER PRIMARY KEY,
-    code            TEXT    NOT NULL UNIQUE,
-    name            TEXT    NOT NULL,
-    required_grade  INTEGER NOT NULL REFERENCES grades(grade)
+    id               INTEGER PRIMARY KEY,
+    code             TEXT    NOT NULL UNIQUE,
+    name             TEXT    NOT NULL,
+    required_grade   INTEGER NOT NULL REFERENCES grades(grade),
+    requires_permit  INTEGER NOT NULL DEFAULT 0
+);
+
+-- допуск сотрудника к операции, для которой requires_permit = 1
+CREATE TABLE IF NOT EXISTS employee_permits (
+    id            INTEGER PRIMARY KEY,
+    employee_id   INTEGER NOT NULL REFERENCES employees(id),
+    operation_id  INTEGER NOT NULL REFERENCES operations(id),
+    valid_until   DATE    NOT NULL,
+    UNIQUE (employee_id, operation_id)
+);
+
+-- условия премирования: одна строка
+CREATE TABLE IF NOT EXISTS bonus_settings (
+    id         INTEGER PRIMARY KEY CHECK (id = 1),
+    threshold  NUMERIC NOT NULL CHECK (threshold BETWEEN 50 AND 150),
+    per_pct    NUMERIC NOT NULL CHECK (per_pct BETWEEN 0 AND 10),
+    cap        NUMERIC NOT NULL CHECK (cap BETWEEN 0 AND 100)
 );
 
 -- норма времени зависит от пары (изделие, операция)
@@ -130,7 +148,8 @@ CREATE TABLE IF NOT EXISTS audit_log (
     ts         DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     action     TEXT NOT NULL,
     entity     TEXT NOT NULL,
-    entity_id  INTEGER
+    entity_id  INTEGER,
+    details    TEXT
 );
 
 -- системные справочники: код в приложении опирается на эти id
@@ -142,6 +161,8 @@ INSERT OR IGNORE INTO order_statuses (id, name) VALUES
 
 INSERT OR IGNORE INTO absence_types (code, name) VALUES
     ('Я', 'Явка'), ('Б', 'Больничный'), ('О', 'Отпуск'), ('П', 'Прогул'), ('В', 'Выходной');
+
+INSERT OR IGNORE INTO bonus_settings (id, threshold, per_pct, cap) VALUES (1, 100, 1.5, 25);
 
 -- расценка не хранится, а выводится из нормы и ставки разряда операции
 CREATE VIEW IF NOT EXISTS v_route_rates AS

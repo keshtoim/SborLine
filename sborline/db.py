@@ -23,7 +23,17 @@ def connect(path: str | Path) -> sqlite3.Connection:
     return conn
 
 
+def _columns(conn, table) -> set[str]:
+    return {r[1] for r in conn.execute(f"PRAGMA table_info({table})")}
+
+
 def init_schema(conn: sqlite3.Connection) -> None:
+    # базы первой версии: CREATE IF NOT EXISTS не добавит новые колонки, поэтому сначала ALTER
+    if "operations" in {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type = 'table'")}:
+        if "requires_permit" not in _columns(conn, "operations"):
+            conn.execute("ALTER TABLE operations ADD COLUMN requires_permit INTEGER NOT NULL DEFAULT 0")
+        if "details" not in _columns(conn, "audit_log"):
+            conn.execute("ALTER TABLE audit_log ADD COLUMN details TEXT")
     conn.executescript(_resource("schema.sql").read_text(encoding="utf-8"))
 
 
