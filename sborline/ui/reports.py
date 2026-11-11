@@ -1,5 +1,8 @@
+from PySide6.QtWidgets import QFileDialog, QMessageBox, QPushButton
+
 from .. import services
-from .widgets import Context, MonthBar, Page, fill_table, item, label, make_table, num, page_header, rub
+from ..export import export_payroll
+from .widgets import Context, MonthBar, Page, fill_table, item, label, make_table, num, page_header, rub, warn
 
 HEADERS = ["Таб. №", "Сотрудник", "Участок", "Разряд", "Отработано, ч", "Нормо-ч", "% нормы", "Годных", "Брак",
            "Начислено"]
@@ -10,8 +13,9 @@ class ReportsPage(Page):
         super().__init__(ctx)
         self.month_bar = MonthBar(ctx.today)
         self.month_bar.changed.connect(lambda *_: self.refresh())
-        header, *_ = page_header("Расчётный период", "Ведомость сдельного заработка", self.month_bar)
-        self.header = header
+        export_btn = QPushButton("Экспорт в Excel")
+        export_btn.clicked.connect(self._export)
+        header, *_ = page_header("Расчётный период", "Ведомость сдельного заработка", self.month_bar, export_btn)
         self.root.addLayout(header)
         self.root.addWidget(label("Расценка = норма времени × часовая ставка разряда, который требует операция. "
                                   "Оранжевым — выполнение нормы ниже 95%.", "muted", wrap=True))
@@ -43,3 +47,16 @@ class ReportsPage(Page):
             item(rub(sum(s["earned"] for s in self.rows)), right=True, bold=True),
         ])
         fill_table(self.table, lines, stretch_col=1)
+
+    def _export(self) -> None:
+        y, m = self.month_bar.year, self.month_bar.month
+        path, _ = QFileDialog.getSaveFileName(self, "Сохранить ведомость", f"Ведомость_{m:02d}_{y}.xlsx",
+                                              "Книга Excel (*.xlsx)")
+        if not path:
+            return
+        try:
+            export_payroll(path, self.rows, y, m)
+        except PermissionError:
+            warn(self, "Не удалось записать файл: возможно, он открыт в Excel. Закройте его и повторите.")
+            return
+        QMessageBox.information(self, "СборЛайн", f"Ведомость сохранена:\n{path}")
