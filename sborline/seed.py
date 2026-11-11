@@ -25,6 +25,18 @@ EMPLOYEES = [
     (7, "Т-0105", "Белова", "Ольга", "Николаевна", 3, 1, 6, "2012-04-02"),
 ]
 
+OPERATIONS = [
+    (1, "О-010", "Запрессовка подшипников", 3, 0),
+    (2, "О-020", "Сборка корпуса", 3, 0),
+    (3, "О-030", "Монтаж жгута", 4, 1),
+    (4, "О-040", "Регулировка и обкатка", 5, 1),
+    (5, "О-050", "Контроль герметичности", 4, 1),
+    (6, "О-090", "Упаковка", 2, 0),
+]
+
+# допуски: (сотрудник, операция, дней до окончания); есть истёкший и истекающие
+PERMITS = [(3, 4, 190), (6, 3, 14), (6, 5, 82), (1, 3, 23), (4, 3, -11)]
+
 ROUTES = [
     (1, 1, 10, 18), (1, 2, 20, 25), (1, 4, 30, 40), (1, 6, 40, 6),
     (2, 1, 10, 12), (2, 2, 20, 22), (2, 5, 30, 15), (2, 6, 40, 5),
@@ -62,14 +74,8 @@ def seed_demo(conn: sqlite3.Connection, today: date) -> None:
         (2, "НШ-32.000", "Насос шестерённый НШ-32"),
         (3, "БУ-3.000", "Блок управления БУ-3"),
     ])
-    conn.executemany("INSERT INTO operations (id, code, name, required_grade) VALUES (?, ?, ?, ?)", [
-        (1, "О-010", "Запрессовка подшипников", 3),
-        (2, "О-020", "Сборка корпуса", 3),
-        (3, "О-030", "Монтаж жгута", 4),
-        (4, "О-040", "Регулировка и обкатка", 5),
-        (5, "О-050", "Контроль герметичности", 4),
-        (6, "О-090", "Упаковка", 2),
-    ])
+    conn.executemany("INSERT INTO operations (id, code, name, required_grade, requires_permit) VALUES (?, ?, ?, ?, ?)",
+                     OPERATIONS)
     conn.executemany(
         "INSERT INTO product_operations (product_id, operation_id, seq_no, norm_minutes) VALUES (?, ?, ?, ?)",
         ROUTES)
@@ -80,6 +86,10 @@ def seed_demo(conn: sqlite3.Connection, today: date) -> None:
         conn.execute("INSERT INTO users (login, password_hash, role_id, employee_id) VALUES (?, ?, ?, ?)",
                      (login, hash_password(login), role, emp))
     master_id = conn.execute("SELECT id FROM users WHERE login = 'belova'").fetchone()[0]
+    conn.executemany("INSERT INTO employee_permits (employee_id, operation_id, valid_until) VALUES (?, ?, ?)",
+                     [(e, o, (today + timedelta(days=d)).isoformat()) for e, o, d in PERMITS])
+    short_names = {e[0]: f"{e[2]} {e[3][0]}.{e[4][0]}." for e in EMPLOYEES}
+    op_names = {o[0]: o[2] for o in OPERATIONS}
 
     days = [d for d in month_days(today.year, today.month) if d <= today]
     workdays_by_emp = {}
@@ -145,6 +155,10 @@ def seed_demo(conn: sqlite3.Connection, today: date) -> None:
                                         planned_qty, status_id, issued_by)
                VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
             (f"Н-{1100 + n}", o["date"].isoformat(), o["emp"], o["p"], o["o"], o["qty"], status, master_id))
+        conn.execute(
+            "INSERT INTO audit_log (user_id, ts, action, entity, entity_id, details) VALUES (?, ?, 'INSERT', 'work_orders', ?, ?)",
+            (master_id, f"{o['date'].isoformat()} 07:{40 + o['emp']:02d}:00", cur.lastrowid,
+             f"Выдан наряд Н-{1100 + n}: {short_names[o['emp']]}, {op_names[o['o']]} × {o['qty']}"))
         accepted_by = master_id if status == codes.ST_ACCEPTED else None
         conn.executemany(
             """INSERT INTO work_results (work_order_id, report_date, qty_good, qty_defect, defect_reason_id, accepted_by)

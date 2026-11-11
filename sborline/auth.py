@@ -3,6 +3,8 @@ import hmac
 import os
 import sqlite3
 
+from .services import audit
+
 ITERATIONS = 200_000
 
 
@@ -27,9 +29,6 @@ def authenticate(conn: sqlite3.Connection, login: str, password: str) -> sqlite3
     ).fetchone()
     if user is None or not verify_password(password, user["password_hash"]):
         return None
-    conn.execute(
-        "INSERT INTO audit_log (user_id, action, entity, entity_id) VALUES (?, 'LOGIN', 'users', ?)",
-        (user["id"], user["id"]),
-    )
+    audit(conn, user["id"], "LOGIN", "users", user["id"], "Вход в систему")
     conn.commit()
     return user
