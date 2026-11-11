@@ -130,7 +130,7 @@ class RefsPage(Page):
             for step in services.route(conn, p["id"]):
                 rows.append([
                     item(f"{p['article']} {p['name']}"), item(f"{step['seq_no']:03d}"), item(step["code"]),
-                    item(step["name"]), item(num(step["norm_minutes"], 0), right=True),
+                    item(step["name"]), item(num(step["norm_minutes"]), right=True),
                     item(step["required_grade"], right=True),
                     item("нужен" if step["requires_permit"] else "", color="#a8690f"),
                     item(rub(step["piece_rate"]), right=True),
