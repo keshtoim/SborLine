@@ -1,6 +1,6 @@
 # SborLine — System Diagrams
 
-Automated information system for tracking the work of assembly shop employees. The diagrams are written in Mermaid and render directly on GitHub.
+Automated information system for tracking the work of assembly shop employees at a furniture hardware manufacturer (hinges, ball-bearing drawer slides, gas lifts). The diagrams are written in Mermaid and render directly on GitHub.
 
 Русская версия: [diagrams.ru.md](diagrams.ru.md)
 
