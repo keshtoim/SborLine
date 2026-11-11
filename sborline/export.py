@@ -4,18 +4,18 @@ from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 
 HEADERS = ["Таб. №", "Сотрудник", "Участок", "Разряд", "Отработано, ч", "Нормо-ч", "% нормы", "Годных", "Брак",
-           "Начислено, ₽"]
-WIDTHS = [10, 22, 22, 9, 14, 11, 10, 10, 8, 15]
+           "Сдельно, ₽", "Премия, %", "Премия, ₽", "Итого, ₽"]
+WIDTHS = [10, 22, 22, 9, 14, 11, 10, 10, 8, 15, 11, 14, 15]
 MONTHS = ["январь", "февраль", "март", "апрель", "май", "июнь",
           "июль", "август", "сентябрь", "октябрь", "ноябрь", "декабрь"]
 
 
 def export_payroll(path: str | Path, rows: list[dict], year: int, month: int) -> None:
-    """Ведомость сдельного заработка в .xlsx; итоги — формулами, чтобы правки в Excel пересчитывались."""
+    """Ведомость заработка в .xlsx; итоги — формулами, чтобы правки в Excel пересчитывались."""
     wb = Workbook()
     ws = wb.active
     ws.title = f"{month:02d}.{year}"
-    ws["A1"] = f"Ведомость сдельного заработка за {MONTHS[month - 1]} {year}"
+    ws["A1"] = f"Ведомость заработка за {MONTHS[month - 1]} {year}"
     ws["A1"].font = Font(bold=True, size=13)
 
     head_row = 3
@@ -32,15 +32,19 @@ def export_payroll(path: str | Path, rows: list[dict], year: int, month: int) ->
     for r, s in enumerate(rows, start=first):
         e = s["employee"]
         values = [e["personnel_number"], e["short_name"], e["section"], e["grade"], s["hours"],
-                  round(s["norm_hours"], 2), None, s["good"], s["defect"], s["earned"]]
+                  round(s["norm_hours"], 2), None, s["good"], s["defect"], s["earned"], s["bonus_pct"] / 100,
+                  s["bonus"], None]
         for c, v in enumerate(values, start=1):
             ws.cell(r, c, v)
         ws.cell(r, 7, f"=IF(E{r}=0,0,F{r}/E{r})")
+        ws.cell(r, 13, f"=J{r}+L{r}")
+        if s["truancy"]:
+            ws.cell(r, 11, "прогул")
     last = first + len(rows) - 1
     total = last + 1
 
     ws.cell(total, 1, "Итого").font = Font(bold=True)
-    for col in "EFHIJ":
+    for col in "EFHIJLM":
         ws[f"{col}{total}"] = f"=SUM({col}{first}:{col}{last})"
     ws[f"G{total}"] = f"=IF(E{total}=0,0,F{total}/E{total})"
     for c in range(1, len(HEADERS) + 1):
@@ -50,6 +54,8 @@ def export_payroll(path: str | Path, rows: list[dict], year: int, month: int) ->
     for r in range(first, total + 1):
         ws[f"F{r}"].number_format = "0.0"
         ws[f"G{r}"].number_format = "0.0%"
-        ws[f"J{r}"].number_format = "#,##0.00"
+        ws[f"K{r}"].number_format = "0.0%"
+        for col in "JLM":
+            ws[f"{col}{r}"].number_format = "#,##0.00"
     ws.freeze_panes = ws.cell(first, 1)
     wb.save(path)
