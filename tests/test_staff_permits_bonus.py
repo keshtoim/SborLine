@@ -18,7 +18,7 @@ def _emp_data(**over):
 
 
 def test_order_requires_valid_permit(conn):
-    # Кузнецов, 5 разряд, но без допуска к монтажу жгута
+    # Кузнецов, 5 разряд, но без допуска к клёпке
     with pytest.raises(ValidationError, match="допуска"):
         services.create_order(conn, MASTER, 3, 3, 3, 10, TODAY)
     services.grant_permit(conn, MASTER, 3, 3, TODAY + timedelta(days=30), TODAY)

@@ -11,13 +11,13 @@ MASTER = 2  # belova
 
 
 def test_piece_rate_from_norm_and_grade(conn):
-    # 18 мин × 265 ₽/ч (3 разряд)
-    assert services.route_step(conn, 1, 1)["piece_rate"] == 79.5
+    # 1,2 мин × 265 ₽/ч (3 разряд)
+    assert services.route_step(conn, 1, 1)["piece_rate"] == 5.3
 
 
 def test_grade_rate_change_recalculates_rate(conn):
     services.set_grade_rate(conn, 1, 3, 300)
-    assert services.route_step(conn, 1, 1)["piece_rate"] == 90.0
+    assert services.route_step(conn, 1, 1)["piece_rate"] == 6.0
 
 
 def test_order_rejects_low_grade(conn):

@@ -17,7 +17,7 @@ def test_refs_page_for_admin_and_master(app, conn):
         page = RefsPage(_ctx(conn, login))
         page.refresh()
         assert page.permit_table.rowCount() == 5
-        assert "«Монтаж жгута»" in page.permit_note.text()
+        assert "«Клёпка на пневмопрессе»" in page.permit_note.text()
 
 
 def test_employee_dialog_add_and_validate(app, conn):
